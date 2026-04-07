@@ -11,7 +11,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main',
+                git branch: 'master',
                     credentialsId: 'pat-creds',
                     url: 'https://github.com/peakyblinder0509/redbus.git'
             }
