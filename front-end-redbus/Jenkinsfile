@@ -49,7 +49,7 @@ pipeline {
             steps {
                 dir('front-end-redbus') {
                     sh '''
-                        export NODE_OPTIONS="--max-old-space-size=2048"
+                        export NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=2048"
                         npm run build
                     '''
                 }
@@ -62,7 +62,7 @@ pipeline {
                     sh '''
                         echo "Checking build folder..."
                         ls -la build || (echo "build folder not found!" && exit 1)
-                        echo "✅ Build folder verified"
+                        echo "âœ… Build folder verified"
                     '''
                 }
             }
@@ -74,7 +74,7 @@ pipeline {
                     sh '''
                         echo "Deploying to S3 bucket: ${S3_BUCKET}"
                         aws s3 sync front-end-redbus/build/ s3://${S3_BUCKET}/ --delete
-                        echo "✅ S3 deployment completed"
+                        echo "âœ… S3 deployment completed"
                     '''
                 }
             }
@@ -88,7 +88,7 @@ pipeline {
                         aws cloudfront create-invalidation \
                             --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
                             --paths "/*"
-                        echo "✅ CloudFront invalidation completed"
+                        echo "âœ… CloudFront invalidation completed"
                     '''
                 }
             }
@@ -97,14 +97,11 @@ pipeline {
 
     post {
         success {
-            echo "✅ Frontend deployed successfully!"
-            echo "🌐 Website: http://${S3_BUCKET}.s3-website.${AWS_REGION}.amazonaws.com"
+            echo "âœ… Frontend deployed successfully!"
+            echo "ðŸŒ Website: http://${S3_BUCKET}.s3-website.${AWS_REGION}.amazonaws.com"
         }
         failure {
-            echo "❌ Frontend deployment failed"
-            script {
-                sh 'docker logs frontend-container 2>/dev/null || echo "No container logs"'
-            }
+            echo "âŒ Frontend deployment failed. Check console logs above."
         }
     }
 }
