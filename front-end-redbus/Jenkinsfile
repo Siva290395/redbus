@@ -19,46 +19,62 @@ pipeline {
 
         stage('Check Node Version') {
             steps {
-                dir('front-end-redbus'){
-                sh '''
-                    echo "Node version:"
-                    node -v
-                    echo "NPM version:"
-                    npm -v
-                '''
+                dir('front-end-redbus') {
+                    sh '''
+                        echo "Node version:"
+                        node -v
+                        echo "NPM version:"
+                        npm -v
+                    '''
+                }
             }
         }
-        }
+
         stage('Install Dependencies') {
             steps {
-                dir('front-end-redbus'){
-                sh 'npm install --legacy-peer-deps'
+                dir('front-end-redbus') {
+                    sh '''
+                        echo "Cleaning old dependencies..."
+                        rm -rf node_modules package-lock.json
+                        echo "Installing dependencies..."
+                        npm install --legacy-peer-deps
+                        echo "Fixing postcss issue..."
+                        npm install postcss@8.4.31 --save-dev
+                    '''
+                }
             }
         }
-        }  
+
         stage('Build') {
             steps {
-                dir('front-end-redbus'){
-                sh 'npm run build'
+                dir('front-end-redbus') {
+                    sh '''
+                        export NODE_OPTIONS="--max-old-space-size=2048"
+                        npm run build
+                    '''
+                }
             }
-        }
         }
 
         stage('Verify Build Output') {
             steps {
-                dir('front-end-redbus'){
-                sh '''
-                    echo "Checking build folder..."
-                    ls -la build || (echo "build folder not found!" && exit 1)
-                '''
+                dir('front-end-redbus') {
+                    sh '''
+                        echo "Checking build folder..."
+                        ls -la build || (echo "build folder not found!" && exit 1)
+                        echo "✅ Build folder verified"
+                    '''
+                }
             }
         }
-        }
+
         stage('Deploy to S3') {
             steps {
                 withAWS(credentials: 'shana-cred', region: "${AWS_REGION}") {
                     sh '''
-                        aws s3 sync frontend/build/ s3://${S3_BUCKET}/ --delete
+                        echo "Deploying to S3 bucket: ${S3_BUCKET}"
+                        aws s3 sync front-end-redbus/build/ s3://${S3_BUCKET}/ --delete
+                        echo "✅ S3 deployment completed"
                     '''
                 }
             }
@@ -68,9 +84,11 @@ pipeline {
             steps {
                 withAWS(credentials: 'shana-cred', region: "${AWS_REGION}") {
                     sh '''
+                        echo "Invalidating CloudFront cache..."
                         aws cloudfront create-invalidation \
-                        --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
-                        --paths "/*"
+                            --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
+                            --paths "/*"
+                        echo "✅ CloudFront invalidation completed"
                     '''
                 }
             }
@@ -79,10 +97,14 @@ pipeline {
 
     post {
         success {
-            echo "✅ Frontend deployed successfully"
+            echo "✅ Frontend deployed successfully!"
+            echo "🌐 Website: http://${S3_BUCKET}.s3-website.${AWS_REGION}.amazonaws.com"
         }
         failure {
             echo "❌ Frontend deployment failed"
+            script {
+                sh 'docker logs frontend-container 2>/dev/null || echo "No container logs"'
+            }
         }
     }
 }
