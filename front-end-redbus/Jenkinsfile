@@ -11,7 +11,11 @@ pipeline {
         stage('Install') {
             steps {
                 dir('front-end-redbus') {
-                    sh 'npm install --legacy-peer-deps'
+                    sh '''
+                        rm -rf node_modules package-lock.json
+                        npm install --legacy-peer-deps
+                        npm install postcss@8.4.31 postcss-safe-parser@5.0.5 --save-dev --legacy-peer-deps
+                    '''
                 }
             }
         }
@@ -38,11 +42,11 @@ pipeline {
     }
     post {
         success {
-            echo "âœ… Frontend deployed successfully!"
-            echo "ðŸŒ Website: http://98.92.190.148:3000"
+            echo "✅ Frontend deployed successfully!"
+            echo "🌐 Website: http://10.13.124.110:3000"
         }
         failure {
-            echo "âŒ Frontend deployment failed. Check console logs above."
+            echo "❌ Frontend deployment failed. Check console logs above."
         }
     }
 }
