@@ -34,7 +34,7 @@ pipeline {
                 dir('front-end-redbus') {
                     sh '''
                         /usr/bin/pm2 delete redbus-frontend || true
-                        /usr/bin/pm2 start "serve -s build -l 3000" --name "redbus-frontend"
+                        /usr/bin/pm2 start "serve -s build -l 5000" --name "redbus-frontend"
                     '''
                 }
             }
@@ -43,7 +43,7 @@ pipeline {
     post {
         success {
             echo "✅ Frontend deployed successfully!"
-            echo "🌐 Website: http://10.13.124.110:3000"
+            echo "🌐 Website: http://192.168.192.48:5000"
         }
         failure {
             echo "❌ Frontend deployment failed. Check console logs above."
