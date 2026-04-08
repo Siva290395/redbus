@@ -39,7 +39,7 @@ pipeline {
     post {
         success {
             echo "âœ… Frontend deployed successfully!"
-            echo "ðŸŒ Website: http://3.85.211.15:3000"
+            echo "ðŸŒ Website: http://98.92.190.148:3000"
         }
         failure {
             echo "âŒ Frontend deployment failed. Check console logs above."
