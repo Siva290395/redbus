@@ -33,8 +33,8 @@ pipeline {
             steps {
                 dir('front-end-redbus') {
                     sh '''
-                        pm2 delete redbus-frontend || true
-                        pm2 start "serve -s build -l 3000" --name "redbus-frontend"
+                        /usr/bin/pm2 delete redbus-frontend || true
+                        /usr/bin/pm2 start "serve -s build -l 3000" --name "redbus-frontend"
                     '''
                 }
             }
