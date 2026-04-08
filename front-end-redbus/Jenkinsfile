@@ -1,50 +1,20 @@
 pipeline {
     agent any
-
-    environment {
-        AWS_REGION = "ap-south-1"
-        S3_BUCKET = "krishnagiri-bargur"
-        CLOUDFRONT_DISTRIBUTION_ID = "E35FULF7FODTGJ"
-    }
-
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'master',
-                    credentialsId: 'pat-creds',
-                    url: 'https://github.com/peakyblinder0509/redbus.git'
+                    credentialsId: 'github-creds',
+                    url: 'https://github.com/Siva290395/redbus.git'
             }
         }
-
-        stage('Check Node Version') {
+        stage('Install') {
             steps {
                 dir('front-end-redbus') {
-                    sh '''
-                        echo "Node version:"
-                        node -v
-                        echo "NPM version:"
-                        npm -v
-                    '''
+                    sh 'npm install --legacy-peer-deps'
                 }
             }
         }
-
-        stage('Install Dependencies') {
-            steps {
-                dir('front-end-redbus') {
-                    sh '''
-                        echo "Cleaning old dependencies..."
-                        rm -rf node_modules package-lock.json
-                        echo "Installing dependencies..."
-                        npm install --legacy-peer-deps
-                        echo "Fixing postcss issue..."
-                        npm install postcss@8.4.31 --save-dev
-                    '''
-                }
-            }
-        }
-
         stage('Build') {
             steps {
                 dir('front-end-redbus') {
@@ -55,50 +25,21 @@ pipeline {
                 }
             }
         }
-
-        stage('Verify Build Output') {
+        stage('Deploy') {
             steps {
                 dir('front-end-redbus') {
                     sh '''
-                        echo "Checking build folder..."
-                        ls -la build || (echo "build folder not found!" && exit 1)
-                        echo "âœ… Build folder verified"
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to S3') {
-            steps {
-                withAWS(credentials: 'shana-cred', region: "${AWS_REGION}") {
-                    sh '''
-                        echo "Deploying to S3 bucket: ${S3_BUCKET}"
-                        aws s3 sync front-end-redbus/build/ s3://${S3_BUCKET}/ --delete
-                        echo "âœ… S3 deployment completed"
-                    '''
-                }
-            }
-        }
-
-        stage('CloudFront Invalidation') {
-            steps {
-                withAWS(credentials: 'shana-cred', region: "${AWS_REGION}") {
-                    sh '''
-                        echo "Invalidating CloudFront cache..."
-                        aws cloudfront create-invalidation \
-                            --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
-                            --paths "/*"
-                        echo "âœ… CloudFront invalidation completed"
+                        pm2 delete redbus-frontend || true
+                        pm2 start "serve -s build -l 3000" --name "redbus-frontend"
                     '''
                 }
             }
         }
     }
-
     post {
         success {
             echo "âœ… Frontend deployed successfully!"
-            echo "ðŸŒ Website: http://${S3_BUCKET}.s3-website.${AWS_REGION}.amazonaws.com"
+            echo "ðŸŒ Website: http://3.85.211.15:3000"
         }
         failure {
             echo "âŒ Frontend deployment failed. Check console logs above."
